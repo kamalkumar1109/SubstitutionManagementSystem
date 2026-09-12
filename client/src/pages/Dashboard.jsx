@@ -70,7 +70,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="container">
+    <div className="workspace container">
       <header className="topbar">
         <div>
           <div className="appTitle">School Substitution Management System</div>
@@ -154,7 +154,8 @@ export default function Dashboard() {
       </main>
 
       <footer className="footer muted">
-        ⒸMVP uses hardcoded data + in-memory substitutions.
+        Internal substitution workspace. This screen uses the original in-memory demo data, not
+        school-scoped SaaS records yet.
       </footer>
     </div>
   );

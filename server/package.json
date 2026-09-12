@@ -5,15 +5,33 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon --legacy-watch server.js"
+    "dev": "nodemon --legacy-watch server.js",
+    "test:foundation": "node src/scripts/verify-foundation.js",
+    "test:auth": "node src/scripts/verify-auth.js",
+    "test:catalog": "node src/scripts/verify-catalog.js",
+    "test:substitution": "node src/scripts/verify-substitution.js",
+    "test:billing": "node src/scripts/verify-billing.js",
+    "test:admin": "node src/scripts/verify-admin.js",
+    "test:timetable": "node src/scripts/verify-timetable.js",
+    "test:prompt12": "node src/scripts/verify-prompt12.js",
+    "test:prompt13": "node src/scripts/verify-prompt13.js",
+    "test:prompt14": "node src/scripts/verify-prompt14.js",
+    "test:prompt16": "node src/scripts/verify-prompt16.js",
+    "test:prompt17": "node src/scripts/verify-prompt17.js",
+    "setup:admin": "node src/scripts/setup-super-admin.js",
+    "seed:demo": "node src/scripts/seed-demo-schools.js",
+    "purge:demo": "node src/scripts/purge-demo-schools.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.7.0",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.9.4"
+    "jspdf": "^4.2.1",
+    "mongoose": "^9.9.4",
+    "razorpay": "^2.9.8"
   },
   "devDependencies": {
     "nodemon": "^3.1.4"

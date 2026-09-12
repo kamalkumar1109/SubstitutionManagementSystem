@@ -5,7 +5,9 @@ Monorepo:
 - `client/` React (Vite)
 - `server/` Node + Express
 
-This MVP uses **hardcoded data only** (no DB) and stores generated substitutions **in memory** (server restart resets state).
+This MVP originally used **hardcoded in-memory data**. The backend now has a MongoDB multi-school SaaS foundation under `server/src/` (`/api/*`). Legacy dashboard routes remain at the original paths so the existing React UI still works.
+
+Copy `.env.example` to `.env` and set `MONGODB_URI` / `JWT_SECRET`.
 
 ## Run locally
 

@@ -27,17 +27,16 @@ body {
   padding: 0;
   font-family: var(--sans);
   color: var(--text);
-  background: var(--bg);
+  background: #f7f3ec;
 }
 
 #root {
   min-height: 100vh;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 18px;
+.workspace {
+  min-height: 100vh;
+  background: var(--bg);
 }
 
 .topbar {
