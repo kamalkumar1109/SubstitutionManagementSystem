@@ -1,0 +1,57 @@
+[build]
+  base = "client"
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://substitutionmanagementsystem-backend.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/teachers"
+  to = "https://substitutionmanagementsystem-backend.onrender.com/teachers"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/mark-attendance"
+  to = "https://substitutionmanagementsystem-backend.onrender.com/mark-attendance"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/generate-substitution"
+  to = "https://substitutionmanagementsystem-backend.onrender.com/generate-substitution"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/substitutions"
+  to = "https://substitutionmanagementsystem-backend.onrender.com/substitutions"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/manual-override"
+  to = "https://substitutionmanagementsystem-backend.onrender.com/manual-override"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/reset-day"
+  to = "https://substitutionmanagementsystem-backend.onrender.com/reset-day"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/health"
+  to = "https://substitutionmanagementsystem-backend.onrender.com/health"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

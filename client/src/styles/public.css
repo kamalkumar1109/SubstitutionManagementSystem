@@ -63,39 +63,42 @@
 .site-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-decoration: none;
+  color: var(--olive-deep);
 }
 
 .site-logo-mark {
-  width: 34px;
-  height: 34px;
+  width: 46px;
+  height: 38px;
   display: grid;
   place-items: center;
   background: var(--olive-deep);
   color: var(--paper);
+  border-radius: 11px;
   font-family: var(--serif);
+  font-style: italic;
   font-weight: 600;
-  font-size: 18px;
-}
-
-.site-logo-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
-}
-
-.site-logo-text strong {
-  font-size: 15px;
-  letter-spacing: 0.14em;
-  font-weight: 700;
-}
-
-.site-logo-text em {
-  font-style: normal;
-  font-size: 11px;
-  color: var(--muted);
+  font-size: 14px;
   letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.site-logo-rule {
+  width: 1px;
+  height: 28px;
+  background: #c8bca8;
+  flex: 0 0 auto;
+}
+
+.site-logo-wordmark {
+  font-family: var(--serif);
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: var(--olive-deep);
 }
 
 .site-nav-links {
