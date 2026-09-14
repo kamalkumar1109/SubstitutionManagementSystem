@@ -37,16 +37,10 @@ const TEACHER_CATEGORY = Object.freeze({
 const ASSIGNMENT_TYPE = Object.freeze({
   CLASS: "CLASS",
   MEETING: "MEETING",
-  ACTIVITY: "ACTIVITY",
-  CLUB: "CLUB",
-  KB: "KB",
-  CM: "CM",
-  DM: "DM",
-  LS: "LS",
-  AM: "AM"
+  ACTIVITY: "ACTIVITY"
 });
 
-const ACTIVITY_ASSIGNMENT_TYPES = Object.freeze(["ACTIVITY", "CLUB", "KB", "CM", "DM", "LS", "AM"]);
+const ACTIVITY_ASSIGNMENT_TYPES = Object.freeze(["ACTIVITY"]);
 
 const DAYS_OF_WEEK = Object.freeze([
   "SUNDAY",

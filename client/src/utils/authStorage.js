@@ -2,12 +2,12 @@ const KEY = "sms_auth";
 const SCHOOL_KEY = "sms_acting_school";
 
 export function saveAuth(payload) {
-  sessionStorage.setItem(KEY, JSON.stringify(payload));
+  localStorage.setItem(KEY, JSON.stringify(payload));
 }
 
 export function getAuth() {
   try {
-    const raw = sessionStorage.getItem(KEY);
+    const raw = localStorage.getItem(KEY);
     if (!raw) return null;
     return JSON.parse(raw);
   } catch {
@@ -16,15 +16,15 @@ export function getAuth() {
 }
 
 export function clearAuth() {
-  sessionStorage.removeItem(KEY);
-  sessionStorage.removeItem(SCHOOL_KEY);
+  localStorage.removeItem(KEY);
+  localStorage.removeItem(SCHOOL_KEY);
 }
 
 export function setActingSchoolId(schoolId) {
-  if (!schoolId) sessionStorage.removeItem(SCHOOL_KEY);
-  else sessionStorage.setItem(SCHOOL_KEY, String(schoolId));
+  if (!schoolId) localStorage.removeItem(SCHOOL_KEY);
+  else localStorage.setItem(SCHOOL_KEY, String(schoolId));
 }
 
 export function getActingSchoolId() {
-  return sessionStorage.getItem(SCHOOL_KEY) || "";
+  return localStorage.getItem(SCHOOL_KEY) || "";
 }
