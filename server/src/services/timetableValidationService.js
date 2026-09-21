@@ -418,6 +418,7 @@ async function assertNoConflicts({
   sectionId,
   room,
   weekPattern,
+  assignmentType,
   excludeEntryId
 }) {
   const filter = {
@@ -429,14 +430,17 @@ async function assertNoConflicts({
   if (excludeEntryId) filter._id = { $ne: excludeEntryId };
   const existing = await TimetableEntry.find(filter);
   const pattern = weekPattern || WEEK_PATTERN.EVERY;
+  const activity = assignmentType === ASSIGNMENT_TYPE.ACTIVITY;
 
   for (const row of existing) {
     if (!weekPatternsOverlap(row.weekPattern || WEEK_PATTERN.EVERY, pattern)) continue;
-    if (idStr(row.teacherId) === idStr(teacherId)) {
-      throw AppError.conflict("This teacher is already assigned to another class in this period.");
-    }
-    if (classId && sectionId && idStr(row.classId) === idStr(classId) && idStr(row.sectionId) === idStr(sectionId)) {
-      throw AppError.conflict("This class section already has a subject in this period.");
+    if (!activity) {
+      if (idStr(row.teacherId) === idStr(teacherId)) {
+        throw AppError.conflict("This teacher is already assigned to another class in this period.");
+      }
+      if (classId && sectionId && idStr(row.classId) === idStr(classId) && idStr(row.sectionId) === idStr(sectionId)) {
+        throw AppError.conflict("This class section already has a subject in this period.");
+      }
     }
     const a = String(room || "").trim().toLowerCase();
     const b = String(row.room || "").trim().toLowerCase();
@@ -517,6 +521,7 @@ async function validateEntryPayload({ schoolId, timetable, payload, excludeEntry
       sectionId: section?._id || null,
       room,
       weekPattern,
+      assignmentType,
       excludeEntryId
     });
     return { teacher, subject, klass, section, period, room, weekPattern, assignmentType, comment };
@@ -549,6 +554,7 @@ async function validateEntryPayload({ schoolId, timetable, payload, excludeEntry
     sectionId: payload.sectionId,
     room,
     weekPattern,
+    assignmentType,
     excludeEntryId
   });
   return { teacher, subject, klass, section, period, room, weekPattern, assignmentType, comment };

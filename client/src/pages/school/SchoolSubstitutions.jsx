@@ -35,6 +35,11 @@ export default function SchoolSubstitutions() {
   }, [timetableId]);
 
   useEffect(() => {
+    setTeachersExpanded(false);
+    setQ("");
+  }, [timetableId]);
+
+  useEffect(() => {
     let alive = true;
     (async () => {
       setLoading(true);

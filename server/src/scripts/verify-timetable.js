@@ -25,7 +25,8 @@ const {
   USER_ROLES,
   TIMETABLE_STATUS,
   DAILY_TEACHER_STATUS,
-  EMPLOYMENT_STATUS
+  EMPLOYMENT_STATUS,
+  ASSIGNMENT_TYPE
 } = require("../config/constants");
 const { findActiveTimetable } = require("../services/timetableService");
 const { generateAssignments } = require("../services/substitutionEngine");
@@ -104,6 +105,8 @@ async function seedSchool(prefix) {
   const sec7a = await Section.create({ schoolId: school._id, classId: class7._id, name: "7A" });
   const sec7b = await Section.create({ schoolId: school._id, classId: class7._id, name: "7B" });
   const sec8a = await Section.create({ schoolId: school._id, classId: class8._id, name: "8A" });
+  const sec8b = await Section.create({ schoolId: school._id, classId: class8._id, name: "8B" });
+  const sec8c = await Section.create({ schoolId: school._id, classId: class8._id, name: "8C" });
   const math = await Subject.create({ schoolId: school._id, name: "Mathematics" });
   const english = await Subject.create({ schoolId: school._id, name: "English" });
   const rahul = await Teacher.create({
@@ -120,6 +123,13 @@ async function seedSchool(prefix) {
     subjects: [english._id],
     eligibleClassGroups: [gMid._id]
   });
+  const kiran = await Teacher.create({
+    schoolId: school._id,
+    name: "Kiran",
+    employmentStatus: EMPLOYMENT_STATUS.ACTIVE,
+    subjects: [english._id],
+    eligibleClassGroups: [gMid._id]
+  });
   return {
     school,
     admin,
@@ -132,10 +142,13 @@ async function seedSchool(prefix) {
     sec7a,
     sec7b,
     sec8a,
+    sec8b,
+    sec8c,
     math,
     english,
     rahul,
-    neha
+    neha,
+    kiran
   };
 }
 
@@ -373,8 +386,204 @@ async function run() {
   assert(grid.status === 200 && grid.json.periods.length === 6, "grid uses school period count");
   assert(grid.json.days[0] === "MONDAY" && grid.json.days[5] === "SATURDAY", "grid days Monday to Saturday");
 
+  const activityTt = await request(server, {
+    method: "POST",
+    path: "/api/timetables",
+    token: tokenA,
+    body: {
+      academicSessionId: a.session._id,
+      name: "Activity stacking timetable",
+      periodCount: 6,
+      status: TIMETABLE_STATUS.DRAFT
+    }
+  });
+  assert(activityTt.status === 201, "create activity test timetable");
+  const activityTtId = activityTt.json.timetable._id;
+  const activityPath = `/api/timetables/${activityTtId}/entries`;
+
+  const actA = await request(server, {
+    method: "POST",
+    path: activityPath,
+    token: tokenA,
+    body: {
+      assignmentType: ASSIGNMENT_TYPE.ACTIVITY,
+      teacherId: a.rahul._id,
+      subjectId: a.math._id,
+      classId: a.class8._id,
+      sectionId: a.sec8a._id,
+      dayOfWeek: "MONDAY",
+      period: 5
+    }
+  });
+  assert(actA.status === 201, "activity teacher A class 8A period 5");
+
+  const actB = await request(server, {
+    method: "POST",
+    path: activityPath,
+    token: tokenA,
+    body: {
+      assignmentType: ASSIGNMENT_TYPE.ACTIVITY,
+      teacherId: a.neha._id,
+      subjectId: a.english._id,
+      classId: a.class8._id,
+      sectionId: a.sec8a._id,
+      dayOfWeek: "MONDAY",
+      period: 5
+    }
+  });
+  assert(actB.status === 201, "second activity teacher on same class/period is allowed");
+
+  const actC = await request(server, {
+    method: "POST",
+    path: activityPath,
+    token: tokenA,
+    body: {
+      assignmentType: ASSIGNMENT_TYPE.ACTIVITY,
+      teacherId: a.kiran._id,
+      subjectId: a.english._id,
+      classId: a.class8._id,
+      sectionId: a.sec8a._id,
+      dayOfWeek: "MONDAY",
+      period: 5
+    }
+  });
+  assert(actC.status === 201, "third activity teacher on same class/period is allowed");
+
+  const act8b = await request(server, {
+    method: "POST",
+    path: activityPath,
+    token: tokenA,
+    body: {
+      assignmentType: ASSIGNMENT_TYPE.ACTIVITY,
+      teacherId: a.rahul._id,
+      subjectId: a.math._id,
+      classId: a.class8._id,
+      sectionId: a.sec8b._id,
+      dayOfWeek: "MONDAY",
+      period: 5
+    }
+  });
+  assert(act8b.status === 201, "same activity teacher may also take 8B in the same period");
+
+  const act8c = await request(server, {
+    method: "POST",
+    path: activityPath,
+    token: tokenA,
+    body: {
+      assignmentType: ASSIGNMENT_TYPE.ACTIVITY,
+      teacherId: a.rahul._id,
+      subjectId: a.math._id,
+      classId: a.class8._id,
+      sectionId: a.sec8c._id,
+      dayOfWeek: "MONDAY",
+      period: 5
+    }
+  });
+  assert(act8c.status === 201, "same activity teacher may also take 8C in the same period");
+
+  const activityGrid = await request(server, {
+    method: "GET",
+    path: `/api/timetables/${activityTtId}/grid`,
+    token: tokenA
+  });
+  const activityCell = activityGrid.json.cells["MONDAY:5"] || [];
+  assert(activityCell.length === 5, "all five activity entries remain in the grid cell");
+  const activityTeacherView = await request(server, {
+    method: "GET",
+    path: `/api/timetables/${activityTtId}/teacher/${a.rahul._id}`,
+    token: tokenA
+  });
+  const rahulMon5 = activityTeacherView.json.daysSchedule
+    .find((d) => d.dayOfWeek === "MONDAY")
+    .periods.find((p) => p.period === 5);
+  assert((rahulMon5.entries || []).length === 3, "teacher view keeps three activity classes in period 5");
+  const activityClassView = await request(server, {
+    method: "GET",
+    path: `/api/timetables/${activityTtId}/class/${a.class8._id}?sectionId=${a.sec8a._id}`,
+    token: tokenA
+  });
+  const class8aMon5 = activityClassView.json.daysSchedule
+    .find((d) => d.dayOfWeek === "MONDAY")
+    .periods.find((p) => p.period === 5);
+  assert((class8aMon5.entries || []).length === 3, "class view keeps three activity teachers in period 5");
+
+  const meetingOne = await request(server, {
+    method: "POST",
+    path: activityPath,
+    token: tokenA,
+    body: {
+      assignmentType: ASSIGNMENT_TYPE.MEETING,
+      teacherId: a.kiran._id,
+      dayOfWeek: "TUESDAY",
+      period: 2,
+      comment: "Staff meeting"
+    }
+  });
+  assert(meetingOne.status === 201, "meeting lesson is still allowed");
+  const meetingConflict = await request(server, {
+    method: "POST",
+    path: activityPath,
+    token: tokenA,
+    body: {
+      assignmentType: ASSIGNMENT_TYPE.MEETING,
+      teacherId: a.kiran._id,
+      dayOfWeek: "TUESDAY",
+      period: 2,
+      comment: "Second meeting"
+    }
+  });
+  assert(meetingConflict.status === 409, "meeting still rejects teacher double-booking");
+
+  const classTeacherConflict = await request(server, {
+    method: "POST",
+    path: activityPath,
+    token: tokenA,
+    body: {
+      assignmentType: ASSIGNMENT_TYPE.CLASS,
+      teacherId: a.neha._id,
+      subjectId: a.english._id,
+      classId: a.class8._id,
+      sectionId: a.sec8b._id,
+      dayOfWeek: "WEDNESDAY",
+      period: 1
+    }
+  });
+  assert(classTeacherConflict.status === 201, "normal class placed for conflict check");
+  const classTeacherBlocked = await request(server, {
+    method: "POST",
+    path: activityPath,
+    token: tokenA,
+    body: {
+      assignmentType: ASSIGNMENT_TYPE.CLASS,
+      teacherId: a.neha._id,
+      subjectId: a.english._id,
+      classId: a.class8._id,
+      sectionId: a.sec8c._id,
+      dayOfWeek: "WEDNESDAY",
+      period: 1
+    }
+  });
+  assert(classTeacherBlocked.status === 409, "normal class still rejects teacher conflict");
+  const classSectionBlocked = await request(server, {
+    method: "POST",
+    path: activityPath,
+    token: tokenA,
+    body: {
+      assignmentType: ASSIGNMENT_TYPE.CLASS,
+      teacherId: a.kiran._id,
+      subjectId: a.english._id,
+      classId: a.class8._id,
+      sectionId: a.sec8b._id,
+      dayOfWeek: "WEDNESDAY",
+      period: 1
+    }
+  });
+  assert(classSectionBlocked.status === 409, "normal class still rejects class/section conflict");
+
   const oldEntries = await TimetableEntry.find({ timetableId: ttId });
   const oldSnapshot = oldEntries.map((e) => `${e.teacherId}:${e.period}`).sort().join("|");
+  a.rahul.homeWingTimetableId = ttId;
+  a.neha.homeWingTimetableId = ttId;
 
   const { assignments } = generateAssignments({
     schoolId: a.school._id,

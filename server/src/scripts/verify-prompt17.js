@@ -294,6 +294,11 @@ async function run() {
   });
   assert(otherTt.status === 201, "create other timetable");
   const otherId = otherTt.json.timetable._id;
+  await Teacher.updateMany(
+    { _id: { $in: [anita._id, bala._id, diya._id] } },
+    { $set: { homeWingTimetableId: staybackId } }
+  );
+  await Teacher.updateMany({ _id: chetan._id }, { $set: { homeWingTimetableId: otherId } });
 
   for (const period of [1, 2, 3, 4, 5, 6]) {
     const created = await request(server, {
@@ -491,7 +496,7 @@ async function run() {
   const staybackNames = (staybackBoard.json.teachers || []).map((row) => row.teacher.name);
   assert(staybackNames.includes("Anita"), "selected timetable teachers are listed");
   assert(staybackNames.includes("Bala"), "teachers used by the selected timetable are listed");
-  assert(!staybackNames.includes("Chetan"), "teachers from another timetable are omitted");
+  assert(staybackNames.includes("Chetan"), "all school teachers remain visible for absence selection");
 
   const otherBoard = await request(server, {
     method: "GET",
@@ -499,8 +504,8 @@ async function run() {
     token: tokenA
   });
   const otherNames = (otherBoard.json.teachers || []).map((row) => row.teacher.name);
-  assert(otherNames.includes("Chetan"), "switching timetable shows that timetable's teachers");
-  assert(!otherNames.includes("Anita"), "previous timetable teachers are not mixed in");
+  assert(otherNames.includes("Chetan"), "switching timetable still lists that timetable's teachers");
+  assert(otherNames.includes("Anita"), "teachers from other timetables stay searchable for absence");
 
   await new Promise((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
   await disconnectDb();

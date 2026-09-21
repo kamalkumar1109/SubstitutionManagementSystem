@@ -1,4 +1,4 @@
-const { Teacher, ClassGroup, Subject, TimetableEntry, Substitution, DailyTeacherStatus, TimetableSwap } = require("../models");
+const { Teacher, ClassGroup, Subject, Timetable, TimetableEntry, Substitution, DailyTeacherStatus, TimetableSwap } = require("../models");
 const { EMPLOYMENT_STATUS, AUDIT_ACTIONS, TEACHER_CATEGORY } = require("../config/constants");
 const { AppError } = require("../utils/AppError");
 const { writeAudit } = require("./auditService");
@@ -25,8 +25,19 @@ async function assertOwnedIds(schoolId, Model, ids, label) {
 
 const teacherPopulate = [
   { path: "subjects", select: "name code active" },
-  { path: "eligibleClassGroups", select: "name active" }
+  { path: "eligibleClassGroups", select: "name active" },
+  { path: "homeWingTimetableId", select: "name status academicSessionId" }
 ];
+
+async function resolveHomeWingTimetableId(schoolId, value) {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+  const timetable = await Timetable.findOne({ _id: value, schoolId }).select("_id");
+  if (!timetable) {
+    throw AppError.badRequest("Home Wing must be one of this school's timetables");
+  }
+  return timetable._id;
+}
 
 async function createTeacher({ schoolId, actorId, payload }) {
   if (payload && payload.schoolId && String(payload.schoolId) !== String(schoolId)) {
@@ -46,6 +57,7 @@ async function createTeacher({ schoolId, actorId, payload }) {
 
   await assertOwnedIds(schoolId, ClassGroup, body.eligibleClassGroups, "class groups");
   await assertOwnedIds(schoolId, Subject, body.subjects, "subjects");
+  const homeWingTimetableId = await resolveHomeWingTimetableId(schoolId, body.homeWingTimetableId);
 
   const teacher = await Teacher.create({
     schoolId,
@@ -58,6 +70,7 @@ async function createTeacher({ schoolId, actorId, payload }) {
     alternateWeekSchedule: body.alternateWeekSchedule === true,
     subjects: body.subjects || [],
     eligibleClassGroups: body.eligibleClassGroups || [],
+    homeWingTimetableId: homeWingTimetableId ?? null,
     employmentStatus: body.employmentStatus || EMPLOYMENT_STATUS.ACTIVE,
     joiningDate: body.joiningDate || null,
     leavingDate: body.leavingDate || null,
@@ -149,6 +162,9 @@ async function updateTeacher({ schoolId, actorId, teacherId, payload }) {
   }
   if (body.subjects) {
     await assertOwnedIds(schoolId, Subject, body.subjects, "subjects");
+  }
+  if (body.homeWingTimetableId !== undefined) {
+    teacher.homeWingTimetableId = await resolveHomeWingTimetableId(schoolId, body.homeWingTimetableId);
   }
 
   for (const key of allowed) {

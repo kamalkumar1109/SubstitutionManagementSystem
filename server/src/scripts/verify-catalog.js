@@ -21,7 +21,7 @@ const {
   SubstitutionRun
 } = require("../models");
 const { hashPassword } = require("../utils/password");
-const { USER_ROLES, EMPLOYMENT_STATUS, AUDIT_ACTIONS } = require("../config/constants");
+const { USER_ROLES, EMPLOYMENT_STATUS, AUDIT_ACTIONS, TIMETABLE_STATUS } = require("../config/constants");
 const { isEligibleForClassGroup } = require("../services/substitutionEngine");
 
 function assert(cond, message) {
@@ -141,6 +141,7 @@ async function run() {
   });
   assert(amit.status === 201, "name-only teacher create works");
   assert(String(amit.json.teacher.schoolId) === String(a.school._id), "teacher schoolId comes from auth");
+  assert(!amit.json.teacher.homeWingTimetableId, "existing teachers can omit Home Wing");
 
   const auditAdd = await AuditLog.findOne({
     schoolId: a.school._id,
@@ -305,6 +306,125 @@ async function run() {
     token: tokenA
   });
   assert(activated.status === 200 && activated.json.teacher.active === true, "teacher can be activated again");
+  assert(!activated.json.teacher.homeWingTimetableId, "teachers without Home Wing still load after edit");
+
+  const primaryTt = await request(server, {
+    method: "POST",
+    path: "/api/timetables",
+    token: tokenA,
+    body: {
+      academicSessionId: a.session._id,
+      name: "Primary",
+      periodCount: 6,
+      status: TIMETABLE_STATUS.ACTIVE
+    }
+  });
+  assert(primaryTt.status === 201, "primary timetable created");
+  const secondaryTt = await request(server, {
+    method: "POST",
+    path: "/api/timetables",
+    token: tokenA,
+    body: {
+      academicSessionId: a.session._id,
+      name: "Secondary",
+      periodCount: 6,
+      status: TIMETABLE_STATUS.ACTIVE
+    }
+  });
+  assert(secondaryTt.status === 201, "secondary timetable created");
+
+  for (const name of ["1", "2", "3"]) {
+    const numbered = await request(server, {
+      method: "POST",
+      path: "/api/timetables",
+      token: tokenB,
+      body: {
+        academicSessionId: b.session._id,
+        name,
+        periodCount: 6,
+        status: TIMETABLE_STATUS.ACTIVE
+      }
+    });
+    assert(numbered.status === 201, `school B timetable ${name}`);
+  }
+
+  const wingsA = await request(server, { method: "GET", path: "/api/timetables", token: tokenA });
+  const namesA = (wingsA.json.timetables || []).map((row) => row.name).sort();
+  assert(namesA.join(",") === "Primary,Secondary", "school A Home Wing options are its timetable names");
+
+  const wingsB = await request(server, { method: "GET", path: "/api/timetables", token: tokenB });
+  const namesB = (wingsB.json.timetables || []).map((row) => row.name).sort();
+  assert(namesB.join(",") === "1,2,3", "school B Home Wing options are 1, 2, 3");
+  assert(!namesB.includes("Primary") && !namesB.includes("Secondary"), "Home Wing options are not hard-coded");
+
+  const stealWing = await request(server, {
+    method: "POST",
+    path: "/api/teachers",
+    token: tokenA,
+    body: {
+      name: "Stolen Wing",
+      homeWingTimetableId: wingsB.json.timetables[0]._id
+    }
+  });
+  assert(stealWing.status === 400, "Home Wing from another school is rejected");
+
+  const sumit = await request(server, {
+    method: "POST",
+    path: "/api/teachers",
+    token: tokenA,
+    body: {
+      name: "Sumit",
+      subjects: [subjectA.json.subject._id],
+      eligibleClassGroups: [groupA.json.classGroup._id],
+      homeWingTimetableId: primaryTt.json.timetable._id
+    }
+  });
+  assert(sumit.status === 201, "teacher with Home Wing Primary is created");
+  assert(sumit.json.teacher.homeWingTimetableId?.name === "Primary", "saved Home Wing displays timetable name");
+  assert(
+    String(sumit.json.teacher.homeWingTimetableId?._id || sumit.json.teacher.homeWingTimetableId) ===
+      String(primaryTt.json.timetable._id),
+    "Home Wing stores the timetable id"
+  );
+
+  const sumitEdit = await request(server, {
+    method: "PATCH",
+    path: `/api/teachers/${sumit.json.teacher._id}`,
+    token: tokenA,
+    body: { homeWingTimetableId: secondaryTt.json.timetable._id }
+  });
+  assert(sumitEdit.status === 200, "Home Wing can be changed");
+  assert(sumitEdit.json.teacher.homeWingTimetableId?.name === "Secondary", "updated Home Wing is Secondary");
+
+  const sumitReloaded = await request(server, {
+    method: "GET",
+    path: `/api/teachers/${sumit.json.teacher._id}`,
+    token: tokenA
+  });
+  assert(sumitReloaded.json.teacher.homeWingTimetableId?.name === "Secondary", "Home Wing persists after reload");
+
+  const sumitPrimary = await request(server, {
+    method: "PATCH",
+    path: `/api/teachers/${sumit.json.teacher._id}`,
+    token: tokenA,
+    body: { homeWingTimetableId: primaryTt.json.timetable._id }
+  });
+  assert(sumitPrimary.status === 200, "Home Wing restored to Primary");
+
+  const otherWingLesson = await request(server, {
+    method: "POST",
+    path: `/api/timetables/${secondaryTt.json.timetable._id}/entries`,
+    token: tokenA,
+    body: {
+      teacherId: sumit.json.teacher._id,
+      classId: classA.json.class._id,
+      sectionId: sectionA.json.section._id,
+      subjectId: subjectA.json.subject._id,
+      dayOfWeek: "MONDAY",
+      period: 1
+    }
+  });
+  assert(otherWingLesson.status === 201, "Home Wing does not block teaching on another timetable");
 
   const stray = await request(server, {
     method: "POST",

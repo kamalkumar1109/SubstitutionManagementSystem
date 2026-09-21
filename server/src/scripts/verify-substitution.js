@@ -151,7 +151,7 @@ async function seedSchool(prefix) {
 
 async function addEntry(bundle, slot) {
   return TimetableEntry.create({
-    timetableId: bundle.timetable._id,
+    timetableId: slot.timetableId || bundle.timetable._id,
     schoolId: bundle.school._id,
     academicSessionId: bundle.session._id,
     dayOfWeek: slot.dayOfWeek || "TUESDAY",
@@ -194,63 +194,73 @@ async function run() {
     schoolId: a.school._id,
     name: "Rahul",
     subjects: [a.math._id],
-    eligibleClassGroups: [a.gMid._id]
+    eligibleClassGroups: [a.gMid._id],
+    homeWingTimetableId: a.timetable._id
   });
   const amit = await Teacher.create({
     schoolId: a.school._id,
     name: "Amit",
     subjects: [a.math._id],
-    eligibleClassGroups: [a.gMid._id]
+    eligibleClassGroups: [a.gMid._id],
+    homeWingTimetableId: a.timetable._id
   });
   const kiran = await Teacher.create({
     schoolId: a.school._id,
     name: "Kiran",
     subjects: [a.science._id],
-    eligibleClassGroups: [a.gMid._id]
+    eligibleClassGroups: [a.gMid._id],
+    homeWingTimetableId: a.timetable._id
   });
   const primaryOnly = await Teacher.create({
     schoolId: a.school._id,
     name: "Primary Only",
     subjects: [a.math._id],
-    eligibleClassGroups: [a.gLow._id]
+    eligibleClassGroups: [a.gLow._id],
+    homeWingTimetableId: a.timetable._id
   });
   const sportsLow = await Teacher.create({
     schoolId: a.school._id,
     name: "Sports Low",
     designation: "Sports Teacher",
     subjects: [a.sports._id],
-    eligibleClassGroups: [a.gLow._id]
+    eligibleClassGroups: [a.gLow._id],
+    homeWingTimetableId: a.timetable._id
   });
   const sportsMid = await Teacher.create({
     schoolId: a.school._id,
     name: "Sports Mid",
     designation: "Sports Teacher",
     subjects: [a.sports._id],
-    eligibleClassGroups: [a.gMid._id]
+    eligibleClassGroups: [a.gMid._id],
+    homeWingTimetableId: a.timetable._id
   });
   const occupied = await Teacher.create({
     schoolId: a.school._id,
     name: "Occupied Maya",
     subjects: [a.english._id],
-    eligibleClassGroups: [a.gMid._id]
+    eligibleClassGroups: [a.gMid._id],
+    homeWingTimetableId: a.timetable._id
   });
   const onDuty = await Teacher.create({
     schoolId: a.school._id,
     name: "Duty Desk",
     subjects: [a.english._id],
-    eligibleClassGroups: [a.gMid._id]
+    eligibleClassGroups: [a.gMid._id],
+    homeWingTimetableId: a.timetable._id
   });
   const inactive = await Teacher.create({
     schoolId: a.school._id,
     name: "Resigned",
     eligibleClassGroups: [a.gMid._id],
+    homeWingTimetableId: a.timetable._id,
     active: false,
     employmentStatus: EMPLOYMENT_STATUS.RESIGNED
   });
   const otherSchool = await Teacher.create({
     schoolId: b.school._id,
     name: "Other School",
-    eligibleClassGroups: [b.gMid._id]
+    eligibleClassGroups: [b.gMid._id],
+    homeWingTimetableId: b.timetable._id
   });
 
   a.entries = [
@@ -403,6 +413,257 @@ async function run() {
   });
   const fairIds = [...new Set(fair.assignments.map((row) => String(row.substituteTeacherId)))];
   assert(fairIds.length === 2, "fair allocation spreads two periods across two eligible teachers");
+
+  const primaryWing = await Timetable.create({
+    schoolId: a.school._id,
+    academicSessionId: a.session._id,
+    name: "Primary",
+    status: TIMETABLE_STATUS.ACTIVE,
+    version: 2
+  });
+  const secondaryWing = await Timetable.create({
+    schoolId: a.school._id,
+    academicSessionId: a.session._id,
+    name: "Secondary",
+    status: TIMETABLE_STATUS.ACTIVE,
+    version: 3
+  });
+  const wingA = await Teacher.create({
+    schoolId: a.school._id,
+    name: "Wing A",
+    subjects: [a.math._id],
+    eligibleClassGroups: [a.gMid._id],
+    homeWingTimetableId: primaryWing._id
+  });
+  const wingB = await Teacher.create({
+    schoolId: a.school._id,
+    name: "Wing B",
+    subjects: [a.math._id],
+    eligibleClassGroups: [a.gMid._id],
+    homeWingTimetableId: secondaryWing._id
+  });
+  const sumit = await Teacher.create({
+    schoolId: a.school._id,
+    name: "Sumit",
+    subjects: [a.math._id],
+    eligibleClassGroups: [a.gMid._id],
+    homeWingTimetableId: primaryWing._id
+  });
+  const noWing = await Teacher.create({
+    schoolId: a.school._id,
+    name: "No Wing",
+    subjects: [a.math._id],
+    eligibleClassGroups: [a.gMid._id]
+  });
+  const absentPrimary = await Teacher.create({
+    schoolId: a.school._id,
+    name: "Absent Primary",
+    subjects: [a.math._id],
+    eligibleClassGroups: [a.gMid._id],
+    homeWingTimetableId: primaryWing._id
+  });
+  const absentSecondary = await Teacher.create({
+    schoolId: a.school._id,
+    name: "Absent Secondary",
+    subjects: [a.math._id],
+    eligibleClassGroups: [a.gMid._id],
+    homeWingTimetableId: secondaryWing._id
+  });
+
+  const wingEntries = [
+    await addEntry(a, {
+      timetableId: primaryWing._id,
+      period: 4,
+      teacherId: absentPrimary._id,
+      subjectId: a.math._id,
+      classId: a.class7._id,
+      sectionId: a.sec7a._id
+    }),
+    await addEntry(a, {
+      timetableId: secondaryWing._id,
+      period: 4,
+      teacherId: absentSecondary._id,
+      subjectId: a.math._id,
+      classId: a.class8._id,
+      sectionId: a.sec8b._id
+    }),
+    await addEntry(a, {
+      timetableId: primaryWing._id,
+      period: 5,
+      teacherId: sumit._id,
+      subjectId: a.math._id,
+      classId: a.class7._id,
+      sectionId: a.sec7a._id
+    }),
+    await addEntry(a, {
+      timetableId: secondaryWing._id,
+      period: 6,
+      teacherId: sumit._id,
+      subjectId: a.math._id,
+      classId: a.class8._id,
+      sectionId: a.sec8b._id
+    })
+  ];
+  const wingTeachers = [wingA, wingB, sumit, absentPrimary, absentSecondary];
+  const wingClasses = new Map([
+    [String(a.class7._id), a.class7],
+    [String(a.class8._id), a.class8]
+  ]);
+
+  const primaryNeed = generateAssignments({
+    schoolId: a.school._id,
+    academicSessionId: a.session._id,
+    dateKey: "2026-09-01",
+    dayOfWeek: "TUESDAY",
+    teachers: wingTeachers,
+    classesById: wingClasses,
+    statusByTeacherId: new Map([
+      [String(absentPrimary._id), DAILY_TEACHER_STATUS.ABSENT],
+      ...present([wingA, wingB, sumit, absentSecondary])
+    ]),
+    timetableEntries: wingEntries,
+    existingSubstitutions: []
+  });
+  const primaryRow = primaryNeed.assignments.find((row) => String(row.absentTeacherId) === String(absentPrimary._id));
+  assert(primaryRow, "primary class creates a substitution slot");
+  assert(
+    [String(wingA._id), String(sumit._id)].includes(String(primaryRow.substituteTeacherId)),
+    "primary substitution stays inside Primary Home Wing"
+  );
+  assert(String(primaryRow.substituteTeacherId) !== String(wingB._id), "Secondary Home Wing teacher is excluded from Primary");
+
+  const missingWingPool = generateAssignments({
+    schoolId: a.school._id,
+    academicSessionId: a.session._id,
+    dateKey: "2026-09-01",
+    dayOfWeek: "TUESDAY",
+    teachers: [noWing, wingB, absentPrimary],
+    classesById: wingClasses,
+    statusByTeacherId: new Map([
+      [String(absentPrimary._id), DAILY_TEACHER_STATUS.ABSENT],
+      ...present([noWing, wingB])
+    ]),
+    timetableEntries: [wingEntries[0]],
+    existingSubstitutions: []
+  });
+  const missingWingRow = missingWingPool.assignments.find(
+    (row) => String(row.absentTeacherId) === String(absentPrimary._id)
+  );
+  assert(String(missingWingRow.substituteTeacherId) === String(noWing._id), "teacher without Home Wing stays in the automatic pool");
+  assert(String(missingWingRow.substituteTeacherId) !== String(wingB._id), "set Home Wing still excludes the other wing");
+
+  const secondaryNeed = generateAssignments({
+    schoolId: a.school._id,
+    academicSessionId: a.session._id,
+    dateKey: "2026-09-01",
+    dayOfWeek: "TUESDAY",
+    teachers: wingTeachers,
+    classesById: wingClasses,
+    statusByTeacherId: new Map([
+      [String(absentSecondary._id), DAILY_TEACHER_STATUS.ABSENT],
+      ...present([wingA, wingB, sumit, absentPrimary])
+    ]),
+    timetableEntries: wingEntries,
+    existingSubstitutions: []
+  });
+  const secondaryRow = secondaryNeed.assignments.find(
+    (row) => String(row.absentTeacherId) === String(absentSecondary._id)
+  );
+  assert(String(secondaryRow.substituteTeacherId) === String(wingB._id), "secondary substitution stays inside Secondary Home Wing");
+  assert(String(secondaryRow.substituteTeacherId) !== String(wingA._id), "Primary Home Wing teacher is excluded from Secondary");
+  assert(String(secondaryRow.substituteTeacherId) !== String(sumit._id), "Sumit is not a Secondary candidate just because he teaches 6I");
+
+  const sumitAbsent = generateAssignments({
+    schoolId: a.school._id,
+    academicSessionId: a.session._id,
+    dateKey: "2026-09-01",
+    dayOfWeek: "TUESDAY",
+    teachers: wingTeachers,
+    classesById: wingClasses,
+    statusByTeacherId: new Map([
+      [String(sumit._id), DAILY_TEACHER_STATUS.ABSENT],
+      ...present([wingA, wingB, absentPrimary, absentSecondary])
+    ]),
+    timetableEntries: wingEntries,
+    existingSubstitutions: []
+  });
+  const sumitPrimarySlot = sumitAbsent.assignments.find(
+    (row) => String(row.absentTeacherId) === String(sumit._id) && Number(row.period) === 5
+  );
+  const sumitSecondarySlot = sumitAbsent.assignments.find(
+    (row) => String(row.absentTeacherId) === String(sumit._id) && Number(row.period) === 6
+  );
+  assert(String(sumitPrimarySlot.timetableId) === String(primaryWing._id), "Sumit's Primary class uses the Primary timetable");
+  assert(String(sumitSecondarySlot.timetableId) === String(secondaryWing._id), "Sumit's Secondary class uses the Secondary timetable");
+  assert(
+    [String(wingA._id), String(absentPrimary._id)].includes(String(sumitPrimarySlot.substituteTeacherId)),
+    "Primary slot is covered from Primary Home Wing"
+  );
+  assert(
+    [String(wingB._id), String(absentSecondary._id)].includes(String(sumitSecondarySlot.substituteTeacherId)),
+    "Secondary slot is covered from Secondary Home Wing"
+  );
+
+  const numbered = [];
+  for (const [index, name] of ["1", "2", "3"].entries()) {
+    numbered.push(
+      await Timetable.create({
+        schoolId: a.school._id,
+        academicSessionId: a.session._id,
+        name,
+        status: TIMETABLE_STATUS.ACTIVE,
+        version: 4 + index
+      })
+    );
+  }
+  const numberedTeacher = await Teacher.create({
+    schoolId: a.school._id,
+    name: "Numbered Wing",
+    subjects: [a.math._id],
+    eligibleClassGroups: [a.gMid._id],
+    homeWingTimetableId: numbered[1]._id
+  });
+  const numberedAbsent = await Teacher.create({
+    schoolId: a.school._id,
+    name: "Numbered Absent",
+    subjects: [a.math._id],
+    eligibleClassGroups: [a.gMid._id],
+    homeWingTimetableId: numbered[1]._id
+  });
+  const numberedEntry = await addEntry(a, {
+    timetableId: numbered[1]._id,
+    period: 7,
+    teacherId: numberedAbsent._id,
+    subjectId: a.math._id,
+    classId: a.class7._id,
+    sectionId: a.sec7a._id
+  });
+  const numberedResult = generateAssignments({
+    schoolId: a.school._id,
+    academicSessionId: a.session._id,
+    dateKey: "2026-09-01",
+    dayOfWeek: "TUESDAY",
+    teachers: [numberedTeacher, numberedAbsent, wingA],
+    classesById: wingClasses,
+    statusByTeacherId: new Map([
+      [String(numberedAbsent._id), DAILY_TEACHER_STATUS.ABSENT],
+      ...present([numberedTeacher, wingA])
+    ]),
+    timetableEntries: [numberedEntry],
+    existingSubstitutions: []
+  });
+  assert(
+    String(numberedResult.assignments[0].substituteTeacherId) === String(numberedTeacher._id),
+    "Home Wing matching uses timetable ids, not hard-coded Primary/Secondary names"
+  );
+  assert(
+    String(numberedResult.assignments[0].substituteTeacherId) !== String(wingA._id),
+    "Primary-named Home Wing is not used for timetable 2"
+  );
+  assert(
+    !(await TimetableEntry.findOne({ teacherId: numberedTeacher._id, timetableId: numbered[1]._id })),
+    "automatic candidate did not need a class on the affected timetable"
+  );
 
   const app = createApp();
   const server = http.createServer(app);

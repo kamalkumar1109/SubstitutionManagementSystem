@@ -232,6 +232,14 @@ function passesHardRules({
   return { ok: true };
 }
 
+function matchesHomeWing(teacher, affectedTimetableId) {
+  const wingId = refId(teacher?.homeWingTimetableId);
+  if (!wingId) return true;
+  const targetId = refId(affectedTimetableId);
+  if (!targetId) return true;
+  return idsEqual(wingId, targetId);
+}
+
 /**
  * Generate substitution assignments for one school/date/timetable snapshot.
  * Does not persist. Does not mutate timetable documents.
@@ -340,8 +348,10 @@ function generateAssignments({
           : [klass.classGroupId]
         : [];
 
+      const affectedTimetableId = entry.timetableId || timetableId;
       const candidates = scopedTeachers.filter((t) => {
         if (idsEqual(t._id, absentTeacher._id)) return false;
+        if (!matchesHomeWing(t, affectedTimetableId)) return false;
         return passesHardRules({
           teacher: t,
           schoolId,

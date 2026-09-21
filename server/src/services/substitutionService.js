@@ -61,6 +61,10 @@ async function resolveSession(schoolId, academicSessionId, school) {
   return session;
 }
 
+async function loadActiveSchoolTeachers(schoolId) {
+  return Teacher.find({ schoolId, active: true }).sort({ name: 1 });
+}
+
 function presentSubstitution(row) {
   const informational =
     Boolean(row.informational) || row.assignmentType === ASSIGNMENT_TYPE.MEETING;
@@ -245,13 +249,14 @@ async function generateForToday({ schoolId, academicSessionId, date, generatedBy
 
   try {
     const halves = resolveHalfRangesForDay(ctx.timetable, dayOfWeek);
+    const schoolTeachers = await Teacher.find({ schoolId });
     const { assignments, engineVersion, neededKeys } = generateAssignments({
       schoolId,
       academicSessionId: ctx.session._id,
       timetableId: ctx.timetable._id,
       dateKey,
       dayOfWeek,
-      teachers: ctx.teachers,
+      teachers: schoolTeachers,
       classesById: ctx.classesById,
       statusByTeacherId: ctx.statusByTeacherId,
       timetableEntries: ctx.timetableEntries,
@@ -561,8 +566,7 @@ async function getTodayBoard({ schoolId, timetableId }) {
         periodNumbers(timetable),
         effectiveDay.teachersById
       );
-      const teacherIdSet = new Set((effectiveDay.teachers || []).map((t) => String(t._id)));
-      teachers = (status.rows || []).filter((row) => teacherIdSet.has(String(row.teacher?._id)));
+      teachers = status.rows || [];
       const classIds = await TimetableEntry.distinct("classId", {
         schoolId,
         timetableId: timetable._id,
@@ -674,7 +678,9 @@ async function applyManualOverride({
     };
     await row.save();
   } else {
-    const teacher = ctx.teachers.find((t) => String(t._id) === String(substituteTeacherId));
+    const teacher =
+      ctx.teachers.find((t) => String(t._id) === String(substituteTeacherId)) ||
+      (await Teacher.findOne({ _id: substituteTeacherId, schoolId, active: true }));
     if (!teacher) throw AppError.badRequest("Substitute teacher not found in this school");
 
     const klass = ctx.classesById.get(refId(row.classId));
@@ -788,13 +794,14 @@ async function listOverrideCandidates({ schoolId, substitutionId, q }) {
   });
 
   const klass = ctx.classesById.get(refId(row.classId));
+  const schoolTeachers = await loadActiveSchoolTeachers(schoolId);
   const { entriesByTeacherPeriod, assignedSubByPeriod } = await assignmentLookups(ctx, row._id, {
     dateKey
   });
   const needle = String(q || "").trim().toLowerCase();
 
   const candidates = [];
-  for (const teacher of ctx.teachers) {
+  for (const teacher of schoolTeachers) {
     if (String(teacher._id) === String(row.absentTeacherId)) continue;
     if (teacher.active === false) continue;
     const check = validateManualSubstitute({
@@ -879,8 +886,9 @@ async function listRoundDutyCandidates({ schoolId, assignmentId, q }) {
     exceptDutyId: row._id
   });
   const needle = String(q || "").trim().toLowerCase();
+  const schoolTeachers = await loadActiveSchoolTeachers(schoolId);
   const candidates = [];
-  for (const teacher of ctx.teachers) {
+  for (const teacher of schoolTeachers) {
     if (teacher.active === false) continue;
     const check = validateManualSubstitute({
       schoolId,
@@ -934,7 +942,9 @@ async function applyRoundDutyOverride({ schoolId, actorId, assignmentId, substit
     dayOfWeek,
     timetableId: row.timetableId
   });
-  const teacher = ctx.teachers.find((t) => String(t._id) === String(substituteTeacherId));
+  const teacher =
+    ctx.teachers.find((t) => String(t._id) === String(substituteTeacherId)) ||
+    (await Teacher.findOne({ _id: substituteTeacherId, schoolId, active: true }));
   if (!teacher) throw AppError.badRequest("Substitute teacher not found in this school");
   const { entriesByTeacherPeriod, assignedSubByPeriod } = await assignmentLookups(ctx, null, {
     dateKey,

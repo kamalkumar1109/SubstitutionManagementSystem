@@ -11,7 +11,8 @@ const EMPTY = {
   joiningDate: "",
   employmentStatus: "ACTIVE",
   subjects: [],
-  eligibleClassGroups: []
+  eligibleClassGroups: [],
+  homeWingTimetableId: ""
 };
 
 function toForm(teacher) {
@@ -27,7 +28,8 @@ function toForm(teacher) {
     joiningDate: teacher.joiningDate ? String(teacher.joiningDate).slice(0, 10) : "",
     employmentStatus: teacher.employmentStatus || "ACTIVE",
     subjects: (teacher.subjects || []).map((s) => s._id || s),
-    eligibleClassGroups: (teacher.eligibleClassGroups || []).map((g) => g._id || g)
+    eligibleClassGroups: (teacher.eligibleClassGroups || []).map((g) => g._id || g),
+    homeWingTimetableId: teacher.homeWingTimetableId?._id || teacher.homeWingTimetableId || ""
   };
 }
 
@@ -38,7 +40,16 @@ function toggleId(list, id) {
     : [...list, id];
 }
 
-export default function TeacherForm({ teacher, subjects, classGroups, busy, error, onSubmit, onCancel }) {
+export default function TeacherForm({
+  teacher,
+  subjects,
+  classGroups,
+  timetables,
+  busy,
+  error,
+  onSubmit,
+  onCancel
+}) {
   const [form, setForm] = useState(() => toForm(teacher));
   const [localError, setLocalError] = useState("");
   const isEdit = Boolean(teacher);
@@ -59,6 +70,15 @@ export default function TeacherForm({ teacher, subjects, classGroups, busy, erro
       ),
     [classGroups, form.eligibleClassGroups]
   );
+  const wingOptions = useMemo(() => {
+    const list = [...(timetables || [])];
+    const current = teacher?.homeWingTimetableId;
+    const currentId = current?._id || current;
+    if (currentId && !list.some((row) => String(row._id) === String(currentId))) {
+      list.unshift({ _id: currentId, name: current?.name || "Home Wing" });
+    }
+    return list;
+  }, [timetables, teacher]);
 
   function setField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -82,7 +102,8 @@ export default function TeacherForm({ teacher, subjects, classGroups, busy, erro
       joiningDate: form.joiningDate || null,
       employmentStatus: form.employmentStatus,
       subjects: form.subjects,
-      eligibleClassGroups: form.eligibleClassGroups
+      eligibleClassGroups: form.eligibleClassGroups,
+      homeWingTimetableId: form.homeWingTimetableId || null
     });
   }
 
@@ -144,6 +165,22 @@ export default function TeacherForm({ teacher, subjects, classGroups, busy, erro
             <option value="REGULAR">Regular</option>
             <option value="ACTIVITY">Activity</option>
             <option value="SPORTS">Sports</option>
+          </select>
+        </div>
+        <div className="site-form-field">
+          <label htmlFor="teacher-home-wing">Home Wing</label>
+          <select
+            id="teacher-home-wing"
+            className="app-select"
+            value={form.homeWingTimetableId}
+            onChange={(e) => setField("homeWingTimetableId", e.target.value)}
+          >
+            <option value="">{wingOptions.length ? "Select" : "No timetables yet"}</option>
+            {wingOptions.map((row) => (
+              <option key={row._id} value={row._id}>
+                {row.name}
+              </option>
+            ))}
           </select>
         </div>
         <div className="site-form-field">

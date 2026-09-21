@@ -397,6 +397,9 @@ async function run() {
   assert(entriesBefore === 0, "started empty");
 
   const remaining = await TimetableEntry.find({ timetableId: id0 });
+  a.rahul.homeWingTimetableId = id0;
+  a.kamal.homeWingTimetableId = id0;
+  a.santosh.homeWingTimetableId = id0;
   const { assignments } = generateAssignments({
     schoolId: a.school._id,
     academicSessionId: a.session._id,

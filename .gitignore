@@ -37,3 +37,4 @@ coverage/
 
 #cursor
 .cursor/
+mongodb-backup/

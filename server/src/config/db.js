@@ -26,11 +26,15 @@ async function repairTeacherUniqueIndexes() {
 
 async function repairTimetableEntryIndexes() {
   const TimetableEntry = require("../models/TimetableEntry");
-  const { WEEK_PATTERN } = require("./constants");
+  const { WEEK_PATTERN, ASSIGNMENT_TYPE } = require("./constants");
   try {
     await TimetableEntry.updateMany(
       { $or: [{ weekPattern: { $exists: false } }, { weekPattern: null }, { weekPattern: "" }] },
       { $set: { weekPattern: WEEK_PATTERN.EVERY } }
+    );
+    await TimetableEntry.updateMany(
+      { $or: [{ assignmentType: { $exists: false } }, { assignmentType: null }, { assignmentType: "" }] },
+      { $set: { assignmentType: ASSIGNMENT_TYPE.CLASS } }
     );
   } catch (err) {
     if (err.codeName !== "NamespaceNotFound" && err.code !== 26) throw err;
@@ -39,7 +43,10 @@ async function repairTimetableEntryIndexes() {
   for (const name of [
     "timetableId_1_dayOfWeek_1_period_1_classId_1_sectionId_1",
     "timetableId_1_dayOfWeek_1_period_1_classId_1_sectionId_1_weekPattern_1",
-    "timetableId_1_dayOfWeek_1_period_1_teacherId_1"
+    "uniq_slot_class_section_week",
+    "timetableId_1_dayOfWeek_1_period_1_teacherId_1",
+    "timetableId_1_dayOfWeek_1_period_1_teacherId_1_weekPattern_1",
+    "uniq_slot_teacher_week"
   ]) {
     try {
       await TimetableEntry.collection.dropIndex(name);

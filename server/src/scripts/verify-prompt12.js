@@ -383,6 +383,9 @@ async function run() {
   assert(weekApi.status === 200 && weekApi.json.weekCount === 2 && weekApi.json.weekParity === "EVEN", "week API uses session start");
 
   const oddEntries = [oddArt, regular.json.entry].filter(Boolean);
+  a.artTeacher.homeWingTimetableId = ttId;
+  a.musicTeacher.homeWingTimetableId = ttId;
+  a.rahul.homeWingTimetableId = ttId;
   const result = generateAssignments({
     schoolId: a.school._id,
     academicSessionId: a.session._id,

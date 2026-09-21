@@ -46,12 +46,22 @@ timetableEntrySchema.index(
   {
     unique: true,
     name: "uniq_slot_class_section_week",
-    partialFilterExpression: { classId: { $type: "objectId" }, sectionId: { $type: "objectId" } }
+    partialFilterExpression: {
+      classId: { $type: "objectId" },
+      sectionId: { $type: "objectId" },
+      assignmentType: { $in: [ASSIGNMENT_TYPE.CLASS, ASSIGNMENT_TYPE.MEETING] }
+    }
   }
 );
 timetableEntrySchema.index(
   { timetableId: 1, dayOfWeek: 1, period: 1, teacherId: 1, weekPattern: 1 },
-  { unique: true }
+  {
+    unique: true,
+    name: "uniq_slot_teacher_week",
+    partialFilterExpression: {
+      assignmentType: { $in: [ASSIGNMENT_TYPE.CLASS, ASSIGNMENT_TYPE.MEETING] }
+    }
+  }
 );
 timetableEntrySchema.index({ schoolId: 1, teacherId: 1, dayOfWeek: 1, period: 1 });
 timetableEntrySchema.index({ schoolId: 1, classId: 1, sectionId: 1, dayOfWeek: 1, period: 1 });

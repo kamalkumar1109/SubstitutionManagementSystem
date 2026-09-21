@@ -167,6 +167,9 @@ async function run() {
     status: TIMETABLE_STATUS.ACTIVE,
     version: 1
   });
+  midTeacher.homeWingTimetableId = timetable._id;
+  lowTeacher.homeWingTimetableId = timetable._id;
+  absentLow.homeWingTimetableId = timetable._id;
 
   await TimetableEntry.create({
     timetableId: timetable._id,

@@ -20,6 +20,12 @@ const teacherSchema = new Schema(
     alternateWeekSchedule: { type: Boolean, default: false },
     subjects: [{ type: Schema.Types.ObjectId, ref: "Subject" }],
     eligibleClassGroups: [{ type: Schema.Types.ObjectId, ref: "ClassGroup" }],
+    homeWingTimetableId: {
+      type: Schema.Types.ObjectId,
+      ref: "Timetable",
+      default: null,
+      index: true
+    },
     employmentStatus: {
       type: String,
       enum: Object.values(EMPLOYMENT_STATUS),

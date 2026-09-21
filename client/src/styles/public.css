@@ -70,18 +70,10 @@
 
 .site-logo-mark {
   width: 46px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  background: var(--olive-deep);
-  color: var(--paper);
-  border-radius: 11px;
-  font-family: var(--serif);
-  font-style: italic;
-  font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 0.04em;
-  line-height: 1;
+  height: 46px;
+  display: block;
+  object-fit: contain;
+  flex: 0 0 auto;
 }
 
 .site-logo-rule {

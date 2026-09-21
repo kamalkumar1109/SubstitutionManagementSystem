@@ -268,6 +268,14 @@ async function run() {
   assert(ttSenior.status === 201, "create second active timetable");
   const seniorId = ttSenior.json.timetable._id;
   assert(ttSenior.json.timetable.status === "ACTIVE", "second timetable stays active");
+  await Teacher.updateMany(
+    { _id: { $in: [anita._id, bala._id, diya._id] } },
+    { $set: { homeWingTimetableId: juniorId } }
+  );
+  await Teacher.updateMany(
+    { _id: { $in: [chetan._id, esha._id, farid._id] } },
+    { $set: { homeWingTimetableId: seniorId } }
+  );
 
   const listed = await request(server, {
     method: "GET",

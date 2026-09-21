@@ -9,6 +9,12 @@ function names(list) {
   return list.map((item) => item.name || item).join(", ");
 }
 
+function homeWingName(teacher) {
+  const wing = teacher?.homeWingTimetableId;
+  if (!wing) return "—";
+  return wing.name || "—";
+}
+
 function statusLabel(teacher) {
   if (teacher.employmentStatus === "RESIGNED") return "Resigned";
   if (teacher.employmentStatus === "ON_LEAVE") return "On leave";
@@ -20,6 +26,7 @@ export default function SchoolTeachers() {
   const [teachers, setTeachers] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [classGroups, setClassGroups] = useState([]);
+  const [timetables, setTimetables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [flash, setFlash] = useState("");
@@ -42,12 +49,14 @@ export default function SchoolTeachers() {
   }, [q]);
 
   const loadCatalog = useCallback(async () => {
-    const [subjectRes, groupRes] = await Promise.all([
+    const [subjectRes, groupRes, timetableRes] = await Promise.all([
       apiRequest("/api/catalog/subjects?includeInactive=true"),
-      apiRequest("/api/catalog/class-groups?includeInactive=true")
+      apiRequest("/api/catalog/class-groups?includeInactive=true"),
+      apiRequest("/api/timetables")
     ]);
     setSubjects(subjectRes.subjects || []);
     setClassGroups(groupRes.classGroups || []);
+    setTimetables(timetableRes.timetables || []);
   }, []);
 
   const loadTeachers = useCallback(async () => {
@@ -240,6 +249,7 @@ export default function SchoolTeachers() {
                       <th>Teacher name</th>
                       <th>Employee code</th>
                       <th>Designation</th>
+                      <th>Home Wing</th>
                       <th>Type</th>
                       <th>Subjects</th>
                       <th>Eligible class groups</th>
@@ -254,6 +264,7 @@ export default function SchoolTeachers() {
                         <td>{row.name}</td>
                         <td>{row.employeeCode || "—"}</td>
                         <td>{row.designation || "—"}</td>
+                        <td>{homeWingName(row)}</td>
                         <td>
                           {row.category || "REGULAR"}
                           {row.alternateWeekSchedule ? " · alt. week" : ""}
@@ -313,6 +324,7 @@ export default function SchoolTeachers() {
                   <article key={row._id} className="app-card">
                     <h3>{row.name}</h3>
                     <p>{row.employeeCode || "No employee code"} · {row.designation || "No designation"}</p>
+                    <p>Home wing: {homeWingName(row)}</p>
                     <p>Subjects: {names(row.subjects)}</p>
                     <p>Eligible groups: {names(row.eligibleClassGroups)}</p>
                     <p>
@@ -371,6 +383,7 @@ export default function SchoolTeachers() {
             teacher={editing}
             subjects={subjects}
             classGroups={classGroups}
+            timetables={timetables}
             busy={formBusy}
             error={formError}
             onSubmit={saveTeacher}
