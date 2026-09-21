@@ -881,10 +881,7 @@ async function listRoundDutyCandidates({ schoolId, assignmentId, q }) {
     dayOfWeek,
     timetableId: row.timetableId
   });
-  const { entriesByTeacherPeriod, assignedSubByPeriod } = await assignmentLookups(ctx, null, {
-    dateKey,
-    exceptDutyId: row._id
-  });
+  const { entriesByTeacherPeriod, assignedSubByPeriod } = await assignmentLookups(ctx, null);
   const needle = String(q || "").trim().toLowerCase();
   const schoolTeachers = await loadActiveSchoolTeachers(schoolId);
   const candidates = [];
@@ -946,10 +943,7 @@ async function applyRoundDutyOverride({ schoolId, actorId, assignmentId, substit
     ctx.teachers.find((t) => String(t._id) === String(substituteTeacherId)) ||
     (await Teacher.findOne({ _id: substituteTeacherId, schoolId, active: true }));
   if (!teacher) throw AppError.badRequest("Substitute teacher not found in this school");
-  const { entriesByTeacherPeriod, assignedSubByPeriod } = await assignmentLookups(ctx, null, {
-    dateKey,
-    exceptDutyId: row._id
-  });
+  const { entriesByTeacherPeriod, assignedSubByPeriod } = await assignmentLookups(ctx, null);
   const check = validateManualSubstitute({
     schoolId,
     teacher,
